@@ -97,7 +97,9 @@ void PictureResource::loadRaw(byte *source, int size) {
 	_picture = new Graphics::Surface();
 	_picture->create(width, height, Graphics::PixelFormat::createFormatCLUT8());
 
-	decompressImage(source, *_picture, cmdOffs, pixelOffs, maskOffs, lineSize, cmdFlags, pixelFlags, maskFlags);
+	decompressImage(source, *_picture, cmdOffs, pixelOffs, maskOffs,
+		pixelOffs - cmdOffs, maskOffs - pixelOffs, size - maskOffs,
+		lineSize, cmdFlags, pixelFlags, maskFlags);
 
 	delete sourceS;
 
@@ -173,7 +175,9 @@ void PictureResource::loadChunked(byte *source, int size) {
 	_picture = new Graphics::Surface();
 	_picture->create(width, height, Graphics::PixelFormat::createFormatCLUT8());
 
-	decompressImage(source, *_picture, cmdOffs, pixelOffs, maskOffs, lineSize, cmdFlags, pixelFlags, maskFlags);
+	decompressImage(source, *_picture, cmdOffs, pixelOffs, maskOffs,
+		0, 0, 0,
+		lineSize, cmdFlags, pixelFlags, maskFlags);
 
 	delete sourceS;
 
@@ -232,7 +236,9 @@ void AnimationResource::load(byte *source, int size) {
 		Graphics::Surface *frame = new Graphics::Surface();
 		frame->create(frameWidth, frameHeight, Graphics::PixelFormat::createFormatCLUT8());
 
-		decompressImage(source + frameOffs, *frame, cmdOffs, pixelOffs, maskOffs, lineSize, 0, 0, 0, _flags & 1);
+		decompressImage(source + frameOffs, *frame, cmdOffs, pixelOffs, maskOffs,
+			0, 0, 0,
+			lineSize, 0, 0, 0, _flags & 1);
 
 		_frames.push_back(frame);
 

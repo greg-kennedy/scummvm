@@ -63,7 +63,36 @@ void ValueReader::resetNibbleSwitch() {
 	_nibbleSwitch = false;
 }
 
-void decompressImage(byte *source, Graphics::Surface &surface, uint16 cmdOffs, uint16 pixelOffs, uint16 maskOffs, uint16 lineSize, byte cmdFlags, byte pixelFlags, byte maskFlags, bool deltaFrame) {
+byte *rleDecompress(byte *source, const byte *end, const int maxSize)
+{
+	byte *dest = new byte[maxSize];
+	byte *o = dest;
+
+	while (source < end)
+	{
+		byte val = *source; source ++;
+		if (val < 0x80)
+		{
+			// copy
+			val ++;
+			memcpy(o, source, val);
+			o += val;
+			source += val;
+		} else {
+			// repeat
+			val = 257 - val;
+			memset(o, *source, val);
+			o += val;
+			source ++;
+		}
+	}
+
+	return dest;
+}
+
+void decompressImage(byte *source, Graphics::Surface &surface, uint16 cmdOffs, uint16 pixelOffs, uint16 maskOffs,
+	uint16 cmdSize, uint16 pixelSize, uint16 maskSize,
+	uint16 lineSize, byte cmdFlags, byte pixelFlags, byte maskFlags, bool deltaFrame) {
 
 	const int offsets[] = {
 		0, 1, 2, 3,
@@ -72,17 +101,35 @@ void decompressImage(byte *source, Graphics::Surface &surface, uint16 cmdOffs, u
 		960, 961, 962, 963
 	};
 
-	uint16 pitch = surface.pitch;
-	uint16 width = surface.w;
-	uint16 height = surface.h;
-
-	byte *cmdBuffer = source + cmdOffs;
-	ValueReader maskReader(source + maskOffs, (maskFlags & 2) != 0);
-	ValueReader pixelReader(source + pixelOffs, (pixelFlags & 2) != 0);
-
-	if ((maskFlags != 0) && (maskFlags != 2) && (pixelFlags != 0) && (pixelFlags != 2) && (cmdFlags != 0))
+	if ((maskFlags & 0b11111100) || (pixelFlags & 0b11111100) || (cmdFlags & 0b11111110))
 		error("decompressImage() Unsupported flags: cmdFlags = %02X; maskFlags = %02X, pixelFlags = %02X", cmdFlags, maskFlags, pixelFlags);
 
+	uint16 width = surface.w;
+	uint16 height = surface.h;
+	uint16 pitch = surface.pitch;
+
+	// RLE decompress the buffers as needed (remember to free later!)
+	byte *cmdBuffer;
+	if (cmdFlags & 1)
+		cmdBuffer = rleDecompress(source + cmdOffs, source + cmdOffs + cmdSize, 4800);
+	else
+		cmdBuffer = source + cmdOffs;
+
+	byte *maskBuffer;
+	if (maskFlags & 1)
+		maskBuffer = rleDecompress(source + maskOffs, source + maskOffs + maskSize, ((width + 3) / 4) * ((height + 3) / 4) * 4);
+	else
+		maskBuffer = source + maskOffs;
+	ValueReader maskReader(maskBuffer, (maskFlags & 2) != 0);
+
+	byte *pixelBuffer;
+	if (pixelFlags & 1)
+		pixelBuffer = rleDecompress(source + pixelOffs, source + pixelOffs + pixelSize, ((width + 3) / 4) * ((height + 3) / 4) * 4);
+	else
+		pixelBuffer = source + pixelOffs;
+	ValueReader pixelReader(pixelBuffer, (pixelFlags & 2) != 0);
+
+	//
 	byte *destPtr = (byte *)surface.getPixels();
 
 	byte lineBuf[640 * 4];
@@ -187,6 +234,10 @@ void decompressImage(byte *source, Graphics::Surface &surface, uint16 cmdOffs, u
 
 	}
 
+	//cleanup RLE buffers
+	if (cmdFlags & 1) delete [] cmdBuffer;
+	if (maskFlags & 1) delete [] maskBuffer;
+	if (pixelFlags & 1) delete [] pixelBuffer;
 }
 
 void decompressMovieImage(byte *source, Graphics::Surface &surface, uint16 cmdOffs, uint16 pixelOffs, uint16 maskOffs, uint16 lineSize) {
