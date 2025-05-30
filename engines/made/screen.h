@@ -86,6 +86,8 @@ public:
 	void setScreenLock(bool lock) { _screenLock = lock; }
 	void setVisualEffectNum(int visualEffectNum) { _visualEffectNum = visualEffectNum; }
 
+	uint16 getWidth() { return _screenWidth; }
+	uint16 getHeight() { return _screenHeight; }
 	void setClipArea(uint16 x1, uint16 y1, uint16 x2, uint16 y2) {
 		_clipArea.clipRect = Common::Rect(x1, y1, x2, y2);
 	}
@@ -198,6 +200,7 @@ protected:
 	int16 _outlineColor;
 	int16 _dropShadowColor;
 
+	int16 _screenWidth, _screenHeight;
 	int16 _textX, _textY;
 	Common::Rect _textRect;
 	int16 _currentFontNum;

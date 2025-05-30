@@ -37,14 +37,16 @@ Screen::Screen(MadeEngine *vm) : _vm(vm) {
 	_palette = new byte[768];
 	_newPalette = new byte[768];
 
+	_screenWidth = 320;
+	_screenHeight = 200;
 	_backgroundScreen = new Graphics::Surface();
-	_backgroundScreen->create(320, 200, Graphics::PixelFormat::createFormatCLUT8());
+	_backgroundScreen->create(_screenWidth, _screenHeight, Graphics::PixelFormat::createFormatCLUT8());
 
 	_workScreen = new Graphics::Surface();
-	_workScreen->create(320, 200, Graphics::PixelFormat::createFormatCLUT8());
+	_workScreen->create(_screenWidth, _screenHeight, Graphics::PixelFormat::createFormatCLUT8());
 
-	_backgroundScreenDrawCtx.clipRect = Common::Rect(320, 200);
-	_workScreenDrawCtx.clipRect = Common::Rect(320, 200);
+	_backgroundScreenDrawCtx.clipRect = Common::Rect(_screenWidth, _screenHeight);
+	_workScreenDrawCtx.clipRect = Common::Rect(_screenWidth, _screenHeight);
 
 	_backgroundScreenDrawCtx.destSurface = _backgroundScreen;
 	_workScreenDrawCtx.destSurface = _workScreen;
@@ -53,8 +55,8 @@ Screen::Screen(MadeEngine *vm) : _vm(vm) {
 	// Screen mask is only needed in v2 games
 	if (_vm->getGameID() != GID_RTZ) {
 		_screenMask = new Graphics::Surface();
-		_screenMask->create(320, 200, Graphics::PixelFormat::createFormatCLUT8());
-		_maskDrawCtx.clipRect = Common::Rect(320, 200);
+		_screenMask->create(_screenWidth, _screenHeight, Graphics::PixelFormat::createFormatCLUT8());
+		_maskDrawCtx.clipRect = Common::Rect(_screenWidth, _screenHeight);
 		_maskDrawCtx.destSurface = _screenMask;
 	}
 
@@ -84,11 +86,11 @@ Screen::Screen(MadeEngine *vm) : _vm(vm) {
 	_textColor = 0;
 	_textRect.left = 0;
 	_textRect.top = 0;
-	_textRect.right = 320;
-	_textRect.bottom = 200;
+	_textRect.right = _screenWidth;
+	_textRect.bottom = _screenHeight;
 	_font = nullptr;
 	_currentFontNum = 0;
-	_fontDrawCtx.clipRect = Common::Rect(320, 200);
+	_fontDrawCtx.clipRect = Common::Rect(_screenWidth, _screenHeight);
 	_fontDrawCtx.destSurface = _backgroundScreen;
 	_outlineColor = 0;
 	_dropShadowColor = 0;
@@ -109,10 +111,10 @@ Screen::~Screen() {
 }
 
 void Screen::clearScreen() {
-	_backgroundScreen->fillRect(Common::Rect(0, 0, 320, 200), 0);
-	_workScreen->fillRect(Common::Rect(0, 0, 320, 200), 0);
+	_backgroundScreen->fillRect(Common::Rect(0, 0, _screenWidth, _screenHeight), 0);
+	_workScreen->fillRect(Common::Rect(0, 0, _screenWidth, _screenHeight), 0);
 	if (_vm->getGameID() != GID_RTZ)
-		_screenMask->fillRect(Common::Rect(0, 0, 320, 200), 0);
+		_screenMask->fillRect(Common::Rect(0, 0, _screenWidth, _screenHeight), 0);
 	_mask = 0;
 	_needPalette = true;
 }
@@ -125,18 +127,18 @@ void Screen::setExcludeArea(uint16 x1, uint16 y1, uint16 x2, uint16 y2) {
 	_excludeClipAreaEnabled[3] = false;
 
 	if (x1 == 0 && y1 == 0 && x2 == 0 && y2 == 0) {
-		_excludeClipArea[0].clipRect = Common::Rect(320, 200);
+		_excludeClipArea[0].clipRect = Common::Rect(_screenWidth, _screenHeight);
 		_excludeClipAreaEnabled[0] = true;
 		return;
 	}
 
 	if (y1 > 0 && y2 > 0) {
-		_excludeClipArea[0].clipRect = Common::Rect(320, y1);
+		_excludeClipArea[0].clipRect = Common::Rect(_screenWidth, y1);
 		_excludeClipAreaEnabled[0] = true;
 	}
 
-	if (y1 < 200 && y2 < 200) {
-		_excludeClipArea[1].clipRect = Common::Rect(0, y2, 320, 200);
+	if (y1 < _screenHeight && y2 < _screenHeight) {
+		_excludeClipArea[1].clipRect = Common::Rect(0, y2, _screenWidth, _screenHeight);
 		_excludeClipAreaEnabled[1] = true;
 	}
 
@@ -145,8 +147,8 @@ void Screen::setExcludeArea(uint16 x1, uint16 y1, uint16 x2, uint16 y2) {
 		_excludeClipAreaEnabled[2] = true;
 	}
 
-	if (x1 < 320 && x2 < 320) {
-		_excludeClipArea[3].clipRect = Common::Rect(x2, y1, 320, y2);
+	if (x1 < _screenWidth && x2 < _screenWidth) {
+		_excludeClipArea[3].clipRect = Common::Rect(x2, y1, _screenWidth, y2);
 		_excludeClipAreaEnabled[3] = true;
 	}
 
@@ -345,7 +347,7 @@ void Screen::drawSpriteChannels(const ClipInfo &clipInfo, int16 includeStateMask
 void Screen::updateSprites() {
 	// TODO: This needs some more work, dirty rectangles are currently not used
 
-	memcpy(_workScreen->getPixels(), _backgroundScreen->getPixels(), 64000);
+	memcpy(_workScreen->getPixels(), _backgroundScreen->getPixels(), _screenWidth * _screenHeight);
 
 	drawSpriteChannels(_backgroundScreenDrawCtx, 3, 0);
 	drawSpriteChannels(_workScreenDrawCtx, 1, 2);
@@ -597,7 +599,7 @@ void Screen::show() {
 		return;
 
 	drawSpriteChannels(_backgroundScreenDrawCtx, 3, 0);
-	memcpy(_workScreen->getPixels(), _backgroundScreen->getPixels(), 64000);
+	memcpy(_workScreen->getPixels(), _backgroundScreen->getPixels(), _screenWidth * _screenHeight);
 	drawSpriteChannels(_workScreenDrawCtx, 1, 2);
 
 	_fx->run(_visualEffectNum, _workScreen, _palette, _newPalette, _paletteColorCount);
