@@ -23,6 +23,7 @@
 #define MADE_DATABASE_H
 
 #include "common/hashmap.h"
+#include "common/endian.h"
 
 namespace Common {
 class SeekableReadStream;
@@ -55,7 +56,6 @@ public:
 	void setString(const char *str);
 
 	bool isObject();
-	bool isVector();
 
 	int16 getVectorSize();
 	int16 getVectorItem(int16 index);
@@ -67,6 +67,8 @@ protected:
 	bool _freeData;
 	uint16 _objSize;
 	byte *_objData;
+	virtual inline uint16 getWord(const void *ptr) { return READ_LE_UINT16(ptr); }
+	virtual inline void setWord(void *ptr, uint16 value) { WRITE_LE_UINT16(ptr, value); }
 };
 
 class ObjectV2 : public Object {
@@ -93,6 +95,7 @@ public:
 
 class ObjectV3 : public Object {
 public:
+	ObjectV3(bool bigEndian);
 	int load(Common::SeekableReadStream &source) override;
 	int load(byte *source) override;
 	int save(Common::WriteStream &dest) override;
@@ -107,6 +110,11 @@ public:
 		return !(getFlags() & 1);
 	}
 
+private:
+	// V3 objects may be either endianness depending on source platform
+	bool _bigEndian;
+	inline uint16 getWord(const void *ptr) override { return _bigEndian ? READ_BE_UINT16(ptr) : READ_LE_UINT16(ptr); }
+	inline void setWord(void *ptr, uint16 value) override { return _bigEndian ? WRITE_BE_UINT16(ptr, value) : WRITE_LE_UINT16(ptr, value); }
 };
 
 class GameDatabase {
@@ -161,6 +169,8 @@ protected:
 	Common::String _filename, _redFilename;
 	virtual void load(Common::SeekableReadStream &sourceS) = 0;
 	virtual void reloadFromStream(Common::SeekableReadStream &sourceS) = 0;
+	virtual inline uint16 getWord(const void *ptr) { return READ_LE_UINT16(ptr); }
+	virtual inline void setWord(void *ptr, uint16 value) { WRITE_LE_UINT16(ptr, value); }
 };
 
 class GameDatabaseV2 : public GameDatabase {
@@ -180,17 +190,21 @@ protected:
 
 class GameDatabaseV3 : public GameDatabase {
 public:
-	GameDatabaseV3(MadeEngine *vm);
+	GameDatabaseV3(MadeEngine *vm, bool bigEndian);
 	int16 *findObjectProperty(int16 objectIndex, int16 propertyId, int16 &propertyFlag) override;
 	const char *getString(uint16 offset) override;
 	bool getSavegameDescription(const char *filename, Common::String &description, int16 version) override;
 	int16 savegame(const char *filename, const char *description, int16 version) override;
 	int16 loadgame(const char *filename, int16 version) override;
+
 protected:
 	char *_gameText;
 	uint32 _gameStateOffs;
+	bool _bigEndian;
 	void load(Common::SeekableReadStream &sourceS) override;
 	void reloadFromStream(Common::SeekableReadStream &sourceS) override;
+	inline uint16 getWord(const void *ptr) override { return _bigEndian ? READ_BE_UINT16(ptr) : READ_LE_INT16(ptr); }
+	inline void setWord(void *ptr, uint16 value) override { return _bigEndian ? WRITE_BE_UINT16(ptr, value) : WRITE_LE_INT16(ptr, value); }
 };
 
 } // End of namespace Made

@@ -160,6 +160,23 @@ static const MadeGameDescription gameDescriptions[] = {
 	},
 
 	{
+		// Return to Zork - English MacOS CD version 1.0? 8/20/93
+		{
+			"rtz",
+			"V1.0, 8/20/93, CD",
+			AD_ENTRY1s("rtz.dat", "f5488cf4156603e25ebf21786ea51a98", 606720),
+			Common::EN_ANY,
+			Common::kPlatformMacintosh,
+			ADGF_CD,
+			GUIO0()
+		},
+		GID_RTZ,
+		0,
+		GF_CD,
+		3,
+	},
+
+	{
 		// Return to Zork - German CD version 1.2 9/29/94 (installed)
 		// Supplied by Dark-Star in the ScummVM forums
 		{
