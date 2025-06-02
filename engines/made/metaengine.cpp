@@ -58,8 +58,12 @@ Common::Platform MadeEngine::getPlatform() const {
 	return _gameDescription->desc.platform;
 }
 
-uint16 MadeEngine::getVersion() const {
+uint8 MadeEngine::getVersion() const {
 	return _gameDescription->version;
+}
+
+uint8 MadeEngine::getSubVersion() const {
+	return _gameDescription->subVersion;
 }
 
 } // End of namespace Made

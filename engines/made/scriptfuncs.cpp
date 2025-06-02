@@ -110,7 +110,7 @@ void ScriptFunctions::setupExternalsTable() {
 	if (_vm->getGameID() == GID_MANHOLE || _vm->getGameID() == GID_LGOP2 || _vm->getGameID() == GID_RODNEY) {
 		External(sfAddScreenMask);
 		External(sfSetSpriteMask);
-	} else if (_vm->getGameID() == GID_RTZ) {
+	} else if (_vm->getGameID() == GID_RTZ || _vm->getGameID() == GID_RSBNDE) {
 		External(sfSetClipArea);
 		External(sfSetSpriteClip);
 	}
@@ -119,7 +119,7 @@ void ScriptFunctions::setupExternalsTable() {
 	External(sfStopSound);
 	External(sfPlayVoice);
 
-	if (_vm->getGameID() == GID_MANHOLE || _vm->getGameID() == GID_RTZ || _vm->getGameID() == GID_RODNEY) {
+	if (_vm->getGameID() == GID_MANHOLE || _vm->getGameID() == GID_RTZ || _vm->getGameID() == GID_RODNEY || _vm->getGameID() == GID_RSBNDE) {
 		External(sfPlayCd);
 		External(sfStopCd);
 		External(sfGetCdStatus);
@@ -127,7 +127,7 @@ void ScriptFunctions::setupExternalsTable() {
 		External(sfPlayCdSegment);
 	}
 
-	if (_vm->getGameID() == GID_RTZ) {
+	if (_vm->getGameID() == GID_RTZ || _vm->getGameID() == GID_RSBNDE) {
 		External(sfPrintf);
 		External(sfClearMono);
 		External(sfGetSoundEnergy);
@@ -173,6 +173,11 @@ void ScriptFunctions::setupExternalsTable() {
 		External(sfIsSlowSystem);
 	}
 
+	if (_vm->getGameID() == GID_RSBNDE) {
+		External(sfMovieCall);
+		External(sfCursorXY);
+		External(sfSoundFile);
+	}
 }
 #undef External
 
@@ -1063,6 +1068,24 @@ int16 ScriptFunctions::sfIsSlowSystem(int16 argc, int16 *argv) {
 	// An example is FINTRO00.PMV (with sound) and FINTRO01.PMV (without sound)
 	// One could maybe think about returning 1 here on actually slower systems.
 	return _vm->_introMusicDigital ? 0 : 1;
+}
+
+int16 ScriptFunctions::sfMovieCall(int16 argc, int16* argv) {
+	warning("Unimplemented opcode: sfMovieCall");
+
+	return 0;
+}
+
+int16 ScriptFunctions::sfCursorXY(int16 argc, int16 *argv) {
+	warning("Unimplemented opcode: sfCursorXY");
+
+	return 0;
+}
+
+int16 ScriptFunctions::sfSoundFile(int16 argc, int16 *argv) {
+	warning("Unimplemented opcode: sfSoundFile");
+
+	return 0;
 }
 
 } // End of namespace Made
