@@ -54,6 +54,9 @@ public:
 	void setupExternalsTable();
 	const char* getFuncName(int index) { return _externalFuncNames[index]; }
 	int getCount() const { return _externalFuncs.size(); }
+
+private:
+	void playSound(SoundResource *soundRes, bool externalFile);
 	void stopSound();
 
 protected:
@@ -62,6 +65,7 @@ protected:
 	Audio::SoundHandle _voiceStreamHandle;
 	SoundResource* _soundResource;
 	bool _soundStarted;
+	bool _soundExternalFile;
 	// The sound length in milliseconds for purpose of checking if the sound is
 	// still playing.
 	int _soundCheckLength;
