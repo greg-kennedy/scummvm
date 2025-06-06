@@ -81,7 +81,7 @@ void PictureResource::loadRaw(byte *source, int size) {
 	uint16 width = sourceS->readUint16LE();
 	uint16 height = sourceS->readUint16LE();
 
-	if (cmdFlags || pixelFlags || maskFlags) {
+	if ((maskFlags & 0b11111100) || (pixelFlags & 0b11111100) || (cmdFlags & 0b11111110)) {
 		warning("PictureResource::loadRaw() Graphic has flags set (%d, %d, %d)", cmdFlags, pixelFlags, maskFlags);
 	}
 
@@ -97,7 +97,9 @@ void PictureResource::loadRaw(byte *source, int size) {
 	_picture = new Graphics::Surface();
 	_picture->create(width, height, Graphics::PixelFormat::createFormatCLUT8());
 
-	decompressImage(source, *_picture, cmdOffs, pixelOffs, maskOffs, lineSize, cmdFlags, pixelFlags, maskFlags);
+	decompressImage(source, *_picture, cmdOffs, pixelOffs, maskOffs,
+					pixelOffs - cmdOffs, maskOffs - pixelOffs, size - maskOffs,
+					lineSize, cmdFlags, pixelFlags, maskFlags);
 
 	delete sourceS;
 
@@ -173,7 +175,9 @@ void PictureResource::loadChunked(byte *source, int size) {
 	_picture = new Graphics::Surface();
 	_picture->create(width, height, Graphics::PixelFormat::createFormatCLUT8());
 
-	decompressImage(source, *_picture, cmdOffs, pixelOffs, maskOffs, lineSize, cmdFlags, pixelFlags, maskFlags);
+	decompressImage(source, *_picture, cmdOffs, pixelOffs, maskOffs,
+					0, 0, 0,
+					lineSize, cmdFlags, pixelFlags, maskFlags);
 
 	delete sourceS;
 
@@ -197,9 +201,9 @@ AnimationResource::~AnimationResource() {
 void AnimationResource::load(byte *source, int size) {
 	Common::MemoryReadStream *sourceS = new Common::MemoryReadStream(source, size);
 
-	sourceS->readUint32LE();
-	sourceS->readUint32LE();
-	sourceS->readUint16LE();
+	sourceS->readUint32LE(); // resource type ("ANIM")
+	sourceS->readUint32LE(); // resource chunk size
+	sourceS->readUint16LE(); // unknown (100)
 
 	_flags = sourceS->readUint16LE();
 	_width = sourceS->readUint16LE();
@@ -216,23 +220,25 @@ void AnimationResource::load(byte *source, int size) {
 		uint32 frameOffs = sourceS->readUint32LE();
 
 		sourceS->seek(frameOffs);
-		sourceS->readUint32LE();
+		uint32 frameDataSize = sourceS->readUint32LE();
 		sourceS->readUint32LE();
 
 		uint16 frameWidth = sourceS->readUint16LE();
 		uint16 frameHeight = sourceS->readUint16LE();
 		uint16 cmdOffs = sourceS->readUint16LE();
-		sourceS->readUint16LE();
+		uint16 cmdFlags = sourceS->readUint16LE();
 		uint16 pixelOffs = sourceS->readUint16LE();
-		sourceS->readUint16LE();
+		uint16 pixelFlags = sourceS->readUint16LE();
 		uint16 maskOffs = sourceS->readUint16LE();
-		sourceS->readUint16LE();
+		uint16 maskFlags = sourceS->readUint16LE();
 		uint16 lineSize = sourceS->readUint16LE();
 
 		Graphics::Surface *frame = new Graphics::Surface();
 		frame->create(frameWidth, frameHeight, Graphics::PixelFormat::createFormatCLUT8());
 
-		decompressImage(source + frameOffs, *frame, cmdOffs, pixelOffs, maskOffs, lineSize, 0, 0, 0, _flags & 1);
+		decompressImage(source + frameOffs, *frame, cmdOffs, pixelOffs, maskOffs,
+						pixelOffs - cmdOffs, maskOffs - pixelOffs, frameDataSize - maskOffs,
+						lineSize, cmdFlags, pixelFlags, maskFlags, _flags & 1);
 
 		_frames.push_back(frame);
 
