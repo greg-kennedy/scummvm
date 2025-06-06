@@ -43,7 +43,10 @@ protected:
 	byte *_buffer;
 };
 
-void decompressImage(byte *source, Graphics::Surface &surface, uint16 cmdOffs, uint16 pixelOffs, uint16 maskOffs, uint16 lineSize, byte cmdFlags, byte pixelFlags, byte maskFlags, bool deltaFrame = false);
+void decompressImage(byte *source, Graphics::Surface &surface, uint16 cmdOffs, uint16 pixelOffs, uint16 maskOffs,
+	uint16 cmdSize, uint16 pixelSize, uint16 maskSize,
+	uint16 lineSize, byte cmdFlags, byte pixelFlags, byte maskFlags, bool deltaFrame = false);
+
 void decompressMovieImage(byte *source, Graphics::Surface &surface, uint16 cmdOffs, uint16 pixelOffs, uint16 maskOffs,
 	uint16 cmdSize, uint16 pixelSize, uint16 maskSize, uint16 lineSize,
 	byte cmdFlags, byte pixelFlags, byte maskFlags);
