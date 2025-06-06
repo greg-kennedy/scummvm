@@ -53,4 +53,4 @@ void decompressMovieImage(byte *source, Graphics::Surface &surface, uint16 cmdOf
 
 } // End of namespace Made
 
-#endif /* MADE_H */
+#endif /* MADE_GRAPHICS_H */

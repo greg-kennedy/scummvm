@@ -63,7 +63,7 @@ void ValueReader::resetNibbleSwitch() {
 	_nibbleSwitch = false;
 }
 
-byte *rleDecompress(byte *source, const byte *end, const int maxSize) {
+static byte *rleDecompress(byte *source, const byte *end, const int maxSize) {
 	byte *dest = new byte[maxSize];
 	byte *o = dest;
 

@@ -71,4 +71,4 @@ void decompressSound(byte *source, byte *dest, uint16 chunkSize, uint16 chunkCou
 
 } // End of namespace Made
 
-#endif /* MADE_H */
+#endif /* MADE_SOUND_H */
