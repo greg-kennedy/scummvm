@@ -207,10 +207,11 @@ void ScriptFunctions::setupExternalsTable() {
 		External(sfIsSlowSystem);
 	}
 
-	if (_vm->getGameID() == GID_RSBNDE) {
+	if (_vm->getVersion() >= 3 && _vm->getSubVersion() >= 1) {
 		External(sfMovieCall);
 		External(sfCursorXY);
 		External(sfSoundFile);
+		External(sfUnknown);
 	}
 }
 #undef External
@@ -1119,6 +1120,17 @@ int16 ScriptFunctions::sfSoundFile(int16 argc, int16 *argv) {
 
 	playSound(soundRes, true);
 
+	return 0;
+}
+
+// ///////////////////////////////////////
+
+int16 ScriptFunctions::sfUnknown(int16 argc, int16 *argv) {
+	// This is a placeholder for an unknown function.
+	//  It prints argc and argv.
+	warning("Unknown script function called: argc=%d", argc);
+	for (int i = 0; i < argc; i++)
+		warning(" argv[%d] = %d", i, argv[i]);
 	return 0;
 }
 
