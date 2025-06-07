@@ -745,7 +745,7 @@ void ScriptInterpreter::dumpObject(int16 objectIndex) {
 		Common::String bArray = "";
 		// NOTE: for 3.1 objects, use the commented line here instead
 		//for (byte *i = obj->getData(); i < obj->getData() + obj->getSize() * 4; i++)
-		for (byte *i = obj->getData(); i < obj->getData() + obj->getSize(); i++)
+		for (byte *i = obj->getData(); i < obj->getData() + (obj->getCount1() + obj->getCount2()) * 2; i++)
 			bArray += Common::String::format("%02X", *i);
 		debug(1, "%s", bArray.c_str());
 	}
