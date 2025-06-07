@@ -202,9 +202,9 @@ AnimationResource::~AnimationResource() {
 void AnimationResource::load(byte *source, int size) {
 	Common::MemoryReadStream *sourceS = new Common::MemoryReadStream(source, size);
 
-	sourceS->readUint32LE();
-	sourceS->readUint32LE();
-	sourceS->readUint16LE();
+	sourceS->readUint32LE(); // resource type ("ANIM")
+	sourceS->readUint32LE(); // resource chunk size
+	sourceS->readUint16LE(); // unknown (100)
 
 	_flags = sourceS->readUint16LE();
 	_width = sourceS->readUint16LE();
@@ -221,25 +221,25 @@ void AnimationResource::load(byte *source, int size) {
 		uint32 frameOffs = sourceS->readUint32LE();
 
 		sourceS->seek(frameOffs);
-		sourceS->readUint32LE();
+		uint32 frameDataSize = sourceS->readUint32LE();
 		sourceS->readUint32LE();
 
 		uint16 frameWidth = sourceS->readUint16LE();
 		uint16 frameHeight = sourceS->readUint16LE();
 		uint16 cmdOffs = sourceS->readUint16LE();
-		sourceS->readUint16LE();
+		uint16 cmdFlags = sourceS->readUint16LE();
 		uint16 pixelOffs = sourceS->readUint16LE();
-		sourceS->readUint16LE();
+		uint16 pixelFlags = sourceS->readUint16LE();
 		uint16 maskOffs = sourceS->readUint16LE();
-		sourceS->readUint16LE();
+		uint16 maskFlags = sourceS->readUint16LE();
 		uint16 lineSize = sourceS->readUint16LE();
 
 		Graphics::Surface *frame = new Graphics::Surface();
 		frame->create(frameWidth, frameHeight, Graphics::PixelFormat::createFormatCLUT8());
 
 		decompressImage(source + frameOffs, *frame, cmdOffs, pixelOffs, maskOffs,
-						0, 0, 0,
-						lineSize, 0, 0, 0, _flags & 1);
+						pixelOffs - cmdOffs, maskOffs - pixelOffs, frameDataSize - maskOffs,
+						lineSize, cmdFlags, pixelFlags, maskFlags, _flags & 1);
 
 		_frames.push_back(frame);
 
