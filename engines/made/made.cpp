@@ -66,9 +66,12 @@ MadeEngine::MadeEngine(OSystem *syst, const MadeGameDescription *gameDesc) : Eng
 	if (getGameID() == GID_LGOP2 || getGameID() == GID_MANHOLE || getGameID() == GID_RODNEY) {
 		_dat = new GameDatabaseV2(this);
 	} else if (getGameID() == GID_RTZ) {
-		_dat = new GameDatabaseV3(this);
+		if (getPlatform() == Common::kPlatformMacintosh)
+			_dat = new GameDatabaseV3_1(this, true);
+		else
+			_dat = new GameDatabaseV3(this);
 	} else if (getGameID() == GID_RSBNDE) {
-		_dat = new GameDatabaseV3_1(this);
+		_dat = new GameDatabaseV3_1(this, false);
 	} else {
 		error("Unknown GameID");
 	}
@@ -252,7 +255,7 @@ void MadeEngine::handleEvents() {
 }
 
 Common::Error MadeEngine::run() {
-	_music = new MusicPlayer(this, getGameID() == GID_RTZ);
+	_music = new MusicPlayer(this, getGameID() == GID_RTZ && getPlatform() != Common::kPlatformMacintosh);
 	syncSoundSettings();
 
 	// Initialize backend
@@ -264,6 +267,9 @@ Common::Error MadeEngine::run() {
 		if (getFeatures() & GF_DEMO) {
 			_dat->open("demo.dat");
 			_res->open("demo.prj");
+		} else if (getPlatform() == Common::kPlatformMacintosh) {
+			_dat->open("rtz.dat");
+			_res->open("rtz.prj");
 		} else if (getFeatures() & GF_CD) {
 			_dat->open("rtzcd.dat");
 			_res->open("rtzcd.prj");
@@ -302,7 +308,7 @@ Common::Error MadeEngine::run() {
 		error ("Unknown MADE game");
 	}
 
-	if ((getFeatures() & GF_CD) || (getFeatures() & GF_CD_COMPRESSED)) {
+	if (((getFeatures() & GF_CD) || (getFeatures() & GF_CD_COMPRESSED)) && (getPlatform() != Common::kPlatformMacintosh)) {
 		if (!existExtractedCDAudioFiles()
 		    && !isDataAndCDAudioReadFromSameCD()) {
 			warnMissingExtractedCDAudio();
