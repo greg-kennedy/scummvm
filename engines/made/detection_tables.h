@@ -382,6 +382,22 @@ static const MadeGameDescription gameDescriptions[] = {
 	},
 
 	{
+		// Return to Zork - English MacOS MPEG CD version 1.1.1, 7/12/95
+		{
+			"rtz",
+			"V1.1.1, 7/12/95, CD, MPEG",
+			AD_ENTRY1s("rtz.dat", "289f896ae8c3b5829104991b44825ebb", 602112),
+			Common::EN_ANY,
+			Common::kPlatformMacintosh,
+			ADGF_CD,
+			GUIO1(GAMEOPTION_INTRO_MUSIC_DIGITAL)},
+		GID_RTZ,
+		0,
+		GF_CD | GF_MPEG,
+		3, 1,
+	},
+
+	{
 		// Return to Zork - Mac Demo from Zork Anthology CD
 		// Same disc as DOS version (on ISO-9660)
 		// The only resource fork is in the executable

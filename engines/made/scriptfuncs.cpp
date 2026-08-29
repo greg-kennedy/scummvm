@@ -202,11 +202,15 @@ void ScriptFunctions::setupExternalsTable() {
 		External(sfIsSlowSystem);
 	}
 
-	if (_vm->getGameID() == GID_RSBESTNDE || _vm->getGameID() == GID_RSBUSYNDE) {
+	if ((_vm->getGameID() == GID_RTZ && _vm->getPlatform() == Common::kPlatformMacintosh) ||
+			_vm->getGameID() == GID_RSBESTNDE || _vm->getGameID() == GID_RSBUSYNDE) {
 		External(sfMovieCall);
 		External(sfCursorXY);
 		External(sfSoundFile);
 	}
+
+	if (_vm->getGameID() == GID_RTZ && _vm->getPlatform() == Common::kPlatformMacintosh)
+		External(sfUnknown);
 }
 #undef External
 
@@ -238,7 +242,7 @@ int16 ScriptFunctions::sfClearScreen(int16 argc, int16 *argv) {
 		return 0;
 	if (_vm->_autoStopSound)
 		stopSound();
-	_vm->_screen->clearScreen();
+	_vm->_screen->clearScreen(0); //argc > 0 ? argv[0] : 0);
 	return 0;
 }
 
@@ -273,7 +277,8 @@ int16 ScriptFunctions::sfGetKey(int16 argc, int16 *argv) {
 }
 
 int16 ScriptFunctions::sfSetVisualEffect(int16 argc, int16 *argv) {
-	_vm->_screen->setVisualEffectNum(argv[0]);
+	for (int i = 0; i < argc; i++)
+		_vm->_screen->setVisualEffectNum(argv[i]);
 	return 0;
 }
 
@@ -1228,6 +1233,17 @@ int16 ScriptFunctions::sfSoundFile(int16 argc, int16 *argv) {
 
 	playSound(soundRes, true);
 
+	return 0;
+}
+
+// ///////////////////////////////////////
+
+int16 ScriptFunctions::sfUnknown(int16 argc, int16 *argv) {
+	// This is a placeholder for an unknown function.
+	//  It prints argc and argv.
+	warning("Unknown script function called: argc=%d", argc);
+	for (int i = 0; i < argc; i++)
+		warning(" argv[%d] = %d", i, argv[i]);
 	return 0;
 }
 

@@ -803,6 +803,31 @@ int16 GameDatabaseV3::loadgame(const char *filename, int16 version) {
 }
 
 int16 *GameDatabaseV3::findObjectProperty(int16 objectIndex, int16 propertyId, int16 &propertyFlag) {
+
+	/* Data layout for v3 objects is a special hell.
+
+	Object is an array of int16 with two counts.
+	count1 is the number of "data" slots, and count2 the number of property defs.
+	So an object w/ count1 = 1 and count2 = 1 :
+	[ ID,
+	  VALUE ]
+
+	count1 = 5 count2 = 2:
+	[ ID1,
+	  ID2,
+	  INH_VALUE_1
+	  INH_VALUE_2
+	  INH_VALUE_3
+	  LOCAL_VALUE_1
+	  LOCAL_VALUE_2 ]
+
+	First the local props are searched: look at each ID, match vs 0x3FF, on hit return
+	  - gamestate[LOCAL_VALUE] if & 0x4000, or
+	  - the corresponding value directly if not
+
+	and after that search the parent: 
+	*/
+
 	Object *obj = getObject(objectIndex);
 	if (obj->getClass() >= 0x7FFE) {
 		error("GameDatabaseV3::findObjectProperty(%04X, %04X) Not an object (type=%04X)", objectIndex, propertyId, obj->getClass());
@@ -811,17 +836,28 @@ int16 *GameDatabaseV3::findObjectProperty(int16 objectIndex, int16 propertyId, i
 	int16 *prop = (int16 *)obj->getData();
 	byte count1 = obj->getCount1();
 	byte count2 = obj->getCount2();
+	int siz = (count1 + count2) * 2;
+	debug(4, "----> Searching in object %d(%04X) size %d for property %d(%04X)... count1=%d, count2=%d", objectIndex, objectIndex, siz, propertyId, propertyId, count1, count2);
+
+	for (int i = 0; i < siz / 2; i++) {
+		debug(4, "----> [%d] %04X", i, prop[i]);
+	}
 
 	int16 *propPtr1 = prop + count1;
 	int16 *propPtr2 = prop + count2;
 
 	// First see if the property exists in the given object
 	while (count2-- > 0) {
-		if ((getWord(prop) & 0x3FFF) == propertyId) {
-			if (getWord(prop) & 0x4000) {
+		uint16 readPropId = getWord(prop);
+
+		debug(4, "-----> %d: readPropId = %d(%04X)", count2, readPropId, readPropId);
+		if ((readPropId & 0x3FFF) == propertyId) {
+			if (readPropId & 0x4000) {
 				propertyFlag = 1;
+				debug(4, "--------> 0x4000, returning gamestate + %d", getWord(propPtr1));
 				return (int16 *)_gameState + getWord(propPtr1);
 			} else {
+				debug(4, "--------> 0x3FF, returning pp1");
 				propertyFlag = obj->getFlags() & 1;
 				return propPtr1;
 			}
@@ -834,6 +870,7 @@ int16 *GameDatabaseV3::findObjectProperty(int16 objectIndex, int16 propertyId, i
 	int16 parentObjectIndex = obj->getClass();
 	while (parentObjectIndex != 0) {
 
+		debug(4, "----> Searching in parent object %d(%04X) for property %d(%04X)", parentObjectIndex, parentObjectIndex, propertyId, propertyId);
 		obj = getObject(parentObjectIndex);
 
 		prop = (int16 *)obj->getData();
@@ -844,12 +881,22 @@ int16 *GameDatabaseV3::findObjectProperty(int16 objectIndex, int16 propertyId, i
 		int16 *propertyPtr = prop + count1;
 
 		while (count2-- > 0) {
+			/*
 			if (!(getWord(prop) & 0x8000)) {
 				if ((getWord(prop) & 0x3FFF) == propertyId) {
 					if (getWord(prop) & 0x4000) {
+					*/
+
+			uint16 readPropId = getWord(prop);
+			debug(4, "-----> %d: readPropId = %d(%04X)", count2, readPropId, readPropId);
+			if (!(readPropId & 0x8000)) {
+				if ((readPropId & 0x3FFF) == propertyId) {
+					if (readPropId & 0x4000) {
 						propertyFlag = 1;
+						debug(4, "--------> 0x4000, returning gamestate + %d", getWord(propPtr1));
 						return (int16 *)_gameState + getWord(propPtr1);
 					} else {
+						debug(4, "--------> 0x03FF, returning pp1");
 						propertyFlag = obj->getFlags() & 1;
 						return propPtr1;
 					}
@@ -860,8 +907,10 @@ int16 *GameDatabaseV3::findObjectProperty(int16 objectIndex, int16 propertyId, i
 				if ((getWord(prop) & 0x3FFF) == propertyId) {
 					if (getWord(prop) & 0x4000) {
 						propertyFlag = 1;
+						debug(4, "--------> 0x84000, returning gamestate + %d", getWord(propertyPtr));
 						return (int16 *)_gameState + getWord(propertyPtr);
 					} else {
+						debug(4, "--------> 0x803FF, returning pp");
 						propertyFlag = obj->getFlags() & 1;
 						return propertyPtr;
 					}
@@ -941,44 +990,100 @@ int16 *GameDatabaseV3_1::findObjectProperty(int16 objectIndex, int16 propertyId,
 
 	debug(4, "findObjectProperty(%04X, %04X): Beginning search...", objectIndex, propertyId);
 
-	do {
-		Object *obj = getObject(objectIndex);
+	// begin looking at the target object idx
+	Object *obj = getObject(objectIndex);
+
+	if (obj->getClass() >= 0x7FFE) {
+		error("GameDatabaseV3::findObjectProperty(%04X, %04X) Not an object (type=%04X)", objectIndex, propertyId, obj->getClass());
+	}
+
+	debug(4, "Object (%04X) class %04X size %d", objectIndex, obj->getClass(), obj->getSize());
+	// 3.1 objects are a set of int16 (key) -> int16 (value) entries
+	uint16 count = obj->getSize();
+	int16 *prop = (int16 *)obj->getData();
+	for (int i = 0; i < count; i ++)
+		debug(4, " %04X -> %04X", getWord(prop +i * 2), getWord(prop +i * 2 + 1));
+
+	// Check each "key" on the object for a match.
+	while (count-- > 0) {
+		uint16 readProp = getWord(prop);
+
+		if ((readProp & 0x3FFF) == propertyId) {
+//			if (readProp & 0x8000) {
+//				warning("Don't know what to do with %04X over 0x7FFF!", readProp);
+//			}
+			if (readProp & 0x4000) {
+				// A match w/ 15-bit set indicates you go look in the Gamestate.
+				//  "Value" is an index into the gamestate... return a ptr into gamestate.
+				propertyFlag = 1;
+				return (int16 *)_gameState + getWord(prop + 1);
+			} else {
+				// A match without high-bit indicates the value is right here (literal).
+				//  Return a ptr to the value.
+				propertyFlag = obj->getFlags() & 1;
+				return (prop + 1);
+			}
+		}
+		prop += 2;
+	}
+
+	// Objects are a hierarchy: if no match is found on the current object,
+	//  check its "class" (parent).
+	objectIndex = obj->getClass();
+	while (objectIndex != 0) {
+		obj = getObject(objectIndex);
 
 		if (obj->getClass() >= 0x7FFE) {
 			error("GameDatabaseV3::findObjectProperty(%04X, %04X) Not an object (type=%04X)", objectIndex, propertyId, obj->getClass());
 		}
 
-		// 3.1 objects are a set of int16 (key) -> int16 (value) entries
-		uint16 count = obj->getSize();
+
+		debug(4, "Parent Object (%04X) class %04X size %d", objectIndex, obj->getClass(), obj->getSize());
+		count = obj->getSize();
+		prop = (int16 *)obj->getData();
+		for (int i = 0; i < count; i ++)
+			debug(4, " %04X -> %04X", getWord(prop +i * 2), getWord(prop + i * 2 + 1));
 
 		// Check each "key" on the object for a match.
 		while (count-- > 0) {
 
-			int16 *prop = (int16 *)obj->getData() + (2 * count);
 			uint16 readProp = getWord(prop);
 
 			if ((readProp & 0x3FFF) == propertyId) {
 				if (readProp & 0x8000) {
-					warning("Don't know what to do with %04X over 0x7FFF!", readProp);
-				}
-				if (readProp & 0x4000) {
-					// A match w/ 15-bit set indicates you go look in the Gamestate.
-					//  "Value" is an index into the gamestate... return a ptr into gamestate.
-					propertyFlag = 1;
-					return (int16 *)_gameState + getWord(prop + 1);
+					// A match w/ 16th bit set means that the parent object holds the relevant value.
+					//  In other words, all children inherit from parent's value
+					if (readProp & 0x4000) {
+						// A match w/ 15-bit set indicates you go look in the Gamestate.
+						//  "Value" is an index into the gamestate... return a ptr into gamestate.
+						propertyFlag = 1;
+						return (int16 *)_gameState + getWord(prop + 1);
+					} else {
+						// A match without high-bit indicates the value is right here (literal).
+						//  Return a ptr to the value.
+						propertyFlag = obj->getFlags() & 1;
+						return (prop + 1);
+					}
 				} else {
-					// A match without high-bit indicates the value is right here (literal).
-					//  Return a ptr to the value.
-					propertyFlag = obj->getFlags() & 1;
-					return (prop + 1);
+					// A match w/p 16th bit set means that the child object still holds the relevant value.
+					//  i.e. each child overrides / provides their own val here
+					if (readProp & 0x4000) {
+						// A match w/ 15-bit set indicates you go look in the Gamestate.
+						//  "Value" is an index into the gamestate... return a ptr into gamestate.
+						propertyFlag = 1;
+						return (int16 *)_gameState + getWord(prop + 1);
+					} else {
+						// A match without high-bit indicates the value is right here (literal).
+						//  Return a ptr to the value.
+						propertyFlag = obj->getFlags() & 1;
+						return (prop + 1);
+					}
 				}
 			}
+			prop += 2;
 		}
-
-		// Objects are a hierarchy: if no match is found on the current object,
-		//  check its "class" (parent).
 		objectIndex = obj->getClass();
-	} while (objectIndex != 0);
+	}
 
 	debug(1, "findObjectProperty(%04X, %04X) Property not found", objectIndex, propertyId);
 

@@ -69,7 +69,8 @@ void PictureResource::loadRaw(byte *source, int size) {
 
 	Common::MemoryReadStream *sourceS = new Common::MemoryReadStream(source, size);
 
-	_hasPalette = (sourceS->readByte() != 0);
+	byte imgFlags = sourceS->readByte();
+	_hasPalette = (imgFlags != 0);
 	byte cmdFlags = sourceS->readByte();
 	byte pixelFlags = sourceS->readByte();
 	byte maskFlags = sourceS->readByte();
@@ -77,17 +78,20 @@ void PictureResource::loadRaw(byte *source, int size) {
 	uint16 pixelOffs = sourceS->readUint16LE();
 	uint16 maskOffs = sourceS->readUint16LE();
 	uint16 lineSize = sourceS->readUint16LE();
-	/*uint16 u = */sourceS->readUint16LE();
+	uint16 u = sourceS->readUint16LE(); // height / 4?
 	uint16 width = sourceS->readUint16LE();
 	uint16 height = sourceS->readUint16LE();
 
-	if ((maskFlags & 0b11111100) || (pixelFlags & 0b11111100) || (cmdFlags & 0b11111110)) {
+	debug(2, "imgFlags = %02X, cmdFlags = %02X, pixelFlags = %02X, maskFlags = %02X", imgFlags, cmdFlags, pixelFlags, maskFlags);
+	debug(2, "cmdOffs = %d, pixelOffs = %d, maskOffs = %d, lineSize = %d", cmdOffs, pixelOffs, maskOffs, lineSize);
+
+	if ((maskFlags & ~3) || (pixelFlags & ~3) || (cmdFlags & ~1)) {
 		warning("PictureResource::loadRaw() Graphic has flags set (%d, %d, %d)", cmdFlags, pixelFlags, maskFlags);
 	}
 
 	_paletteColorCount = (cmdOffs - 18) / 3; // 18 = sizeof header
 
-	debug(2, "width = %d; height = %d\n", width, height);
+	debug(2, "unknown = %d, width = %d; height = %d\n", u, width, height);
 
 	if (_hasPalette) {
 		_picturePalette = new byte[_paletteColorCount * 3];

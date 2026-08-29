@@ -143,7 +143,7 @@ public:
  *  - automatically drop all files into dumps/ dir? Might not be desired in all cases
  */
 class DumpFile : public SeekableWriteStream, public NonCopyable {
-protected:
+public:
 	/** File handle to the actual file. 0 if no file is open. */
 	WriteStream *_handle;
 

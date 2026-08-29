@@ -115,6 +115,7 @@ void decompressImage(byte *source, Graphics::Surface &surface, uint16 cmdOffs, u
 	byte *cmdBuffer;
 	if (cmdFlags & 1) {
 		cmdArray.reserve(((height + 3) / 4) * lineSize);
+		warning("rle(cmd): %d", cmdSize);
 		rleDecompress(source + cmdOffs, source + cmdOffs + cmdSize, cmdArray);
 		cmdBuffer = cmdArray.data();
 	} else
@@ -123,6 +124,7 @@ void decompressImage(byte *source, Graphics::Surface &surface, uint16 cmdOffs, u
 	byte *pixelBuffer;
 	if (pixelFlags & 1) {
 		pixelArray.reserve(pixelSize);
+		warning("rle(pix): %d", pixelSize);
 		rleDecompress(source + pixelOffs, source + pixelOffs + pixelSize, pixelArray);
 		pixelBuffer = pixelArray.data();
 	} else
@@ -132,6 +134,7 @@ void decompressImage(byte *source, Graphics::Surface &surface, uint16 cmdOffs, u
 	byte *maskBuffer;
 	if (maskFlags & 1) {
 		maskArray.reserve(maskSize);
+		warning("rle(mas): %d", maskSize);
 		rleDecompress(source + maskOffs, source + maskOffs + maskSize, maskArray);
 		maskBuffer = maskArray.data();
 	} else

@@ -19,6 +19,8 @@
  *
  */
 
+#define FORBIDDEN_SYMBOL_ALLOW_ALL
+
 #include "made/screen.h"
 #include "made/made.h"
 #include "made/screenfx.h"
@@ -29,6 +31,10 @@
 #include "graphics/surface.h"
 #include "graphics/paletteman.h"
 #include "graphics/cursorman.h"
+
+#include "image/bmp.h"
+
+#include <common/file.h>
 
 namespace Made {
 
@@ -136,9 +142,9 @@ Screen::~Screen() {
 	delete _fx;
 }
 
-void Screen::clearScreen() {
-	_backgroundScreen->fillRect(Common::Rect(0, 0, _screenWidth, _screenHeight), 0);
-	_workScreen->fillRect(Common::Rect(0, 0, _screenWidth, _screenHeight), 0);
+void Screen::clearScreen(int16 color) {
+	_backgroundScreen->fillRect(Common::Rect(0, 0, _screenWidth, _screenHeight), color);
+	_workScreen->fillRect(Common::Rect(0, 0, _screenWidth, _screenHeight), color);
 	if (_vm->getGameID() != GID_RTZ && _vm->getGameID() != GID_RSBESTNDE && _vm->getGameID() != GID_RSBUSYNDE)
 		_screenMask->fillRect(Common::Rect(0, 0, _screenWidth, _screenHeight), 0);
 	_mask = 0;
@@ -235,7 +241,7 @@ void Screen::drawSurface(Graphics::Surface *sourceSurface, int x, int y, int16 f
 	for (int16 yc = 0; yc < clipHeight; yc++) {
 		linePtr = source + sourceAdd;
 		for (int16 xc = 0; xc < clipWidth; xc++) {
-			if (*linePtr && (! maskp || maskp[xc] == 0))
+			if (*linePtr && (!maskp || maskp[xc] == 0))
 				dest[xc] = *linePtr;
 			linePtr += linePtrAdd;
 		}
@@ -249,6 +255,9 @@ void Screen::drawSurface(Graphics::Surface *sourceSurface, int x, int y, int16 f
 }
 
 void Screen::setRGBPalette(byte *palRGB, int start, int count) {
+//	warning("setRGBPalette s=%d c=%d", start, count);
+//	for (int i = start; i < start + count; i++)
+//		warning(" [%d] %d, %d, %d", i, palRGB[i * 3], palRGB[i * 3 + 1], palRGB[i * 3 + 2]);
 	_vm->_system->getPaletteManager()->setPalette(palRGB, start, count);
 }
 
@@ -411,6 +420,16 @@ uint16 Screen::drawFlex(uint16 flexIndex, int16 x, int16 y, int16 flipX, int16 f
 		error("Failed to find picture %d", flexIndex);
 
 	Graphics::Surface *sourceSurface = flex->getPicture();
+
+	/*
+	char filename[100];
+	sprintf(filename, "%d.bmp", flexIndex);
+	Common::DumpFile df;
+	df.open(filename);
+
+	Image::writeBMP(*df._handle, *sourceSurface, flex->getPalette());
+	df.close();
+	*/
 
 	drawSurface(sourceSurface, x, y, flipX, flipY, mask, clipInfo);
 
@@ -793,7 +812,7 @@ void Screen::printChar(uint c, int16 x, int16 y, byte color) {
 	if (!_font)
 		return;
 
-	uint width = 8, height = _font->getHeight();
+	uint width = _font->getCharWidth(c), height = _font->getHeight();
 	byte *charData = _font->getChar(c);
 
 	if (!charData)
@@ -802,7 +821,7 @@ void Screen::printChar(uint c, int16 x, int16 y, byte color) {
 	byte p;
 	byte *dest = (byte *)_fontDrawCtx.destSurface->getBasePtr(x, y);
 
-	for (uint yc = 0; yc < height; yc++) {
+	for (uint yc = 0; yc < height && y + yc < _fontDrawCtx.destSurface->h; yc++) {
 		p = charData[yc];
 		for (uint xc = 0; xc < width; xc++) {
 			if (p & 0x80)

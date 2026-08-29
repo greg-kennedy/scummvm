@@ -78,19 +78,19 @@ public:
 	Screen(MadeEngine *vm);
 	~Screen();
 
-	void clearScreen();
+	void clearScreen(int16 color = 0);
 
 	void drawSurface(Graphics::Surface *sourceSurface, int x, int y, int16 flipX, int16 flipY, int16 mask, const ClipInfo &clipInfo);
 
 	void setRGBPalette(byte *palRGB, int start = 0, int count = 256);
-	bool isPaletteLocked() { return _paletteLock; }
+	bool isPaletteLocked() const { return _paletteLock; }
 	void setPaletteLock(bool lock) { _paletteLock = lock; }
-	bool isScreenLocked() { return _screenLock; }
+	bool isScreenLocked() const { return _screenLock; }
 	void setScreenLock(bool lock) { _screenLock = lock; }
 	void setVisualEffectNum(int visualEffectNum) { _visualEffectNum = visualEffectNum; }
 
-	uint16 getWidth() { return _screenWidth; }
-	uint16 getHeight() { return _screenHeight; }
+	uint16 getWidth() const { return _screenWidth; }
+	uint16 getHeight() const { return _screenHeight; }
 	void setClipArea(uint16 x1, uint16 y1, uint16 x2, uint16 y2) {
 		_clipArea.clipRect = Common::Rect(x1, y1, x2, y2);
 	}
@@ -110,7 +110,7 @@ public:
 		_textY = _textRect.top;
 	}
 
-	void getTextRect(Common::Rect &textRect) {
+	void getTextRect(Common::Rect &textRect) const {
 		textRect = _textRect;
 	}
 
