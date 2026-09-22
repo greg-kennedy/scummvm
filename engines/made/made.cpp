@@ -69,7 +69,7 @@ MadeEngine::MadeEngine(OSystem *syst, const MadeGameDescription *gameDesc) : Eng
 	_res = new ResourceReader();
 	_screen = new Screen(this);
 
-	if (getGameID() == GID_LGOP2 || getGameID() == GID_MANHOLE || getGameID() == GID_RODNEY) {
+	if (getGameID() == GID_LGOP2 || getGameID() == GID_MANHOLE || getGameID() == GID_MANHOLE_NE || getGameID() == GID_RODNEY) {
 		_dat = new GameDatabaseV2(this);
 	} else if (getGameID() == GID_RTZ) {
 		if (getPlatform() == Common::kPlatformMacintosh)
@@ -461,7 +461,7 @@ Common::Error MadeEngine::run() {
 		} else {
 			error("Unknown RTZ game features");
 		}
-	} else if (getGameID() == GID_MANHOLE) {
+	} else if (getGameID() == GID_MANHOLE || getGameID() == GID_MANHOLE_NE) {
 		_dat->open("manhole.dat");
 
 		if (getVersion() == 2) {
