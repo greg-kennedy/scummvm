@@ -70,7 +70,7 @@ MadeEngine::MadeEngine(OSystem *syst, const MadeGameDescription *gameDesc) : Eng
 	_screen = new Screen(this);
 
 	if (getVersion() == 1)
-		_dat = new GameDatabaseV2(this);
+		_dat = new GameDatabaseV1(this);
 	else if (getVersion() == 2)
 		_dat = new GameDatabaseV2(this);
 	else if (getVersion() == 3) {
